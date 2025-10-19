@@ -1,5 +1,6 @@
 using UnityEngine;
 
+
 public class LockCameraY : MonoBehaviour
 {
     public Transform target;

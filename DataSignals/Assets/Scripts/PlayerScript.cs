@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerScript : MonoBehaviour
 {
@@ -11,6 +12,7 @@ public class PlayerScript : MonoBehaviour
     private LineRenderer lineRenderer;
     private bool touchingEnemy = false;
     private bool touchingWall = false;
+    private float gameTime = 0;
 
     void Start() {
         rb = GetComponent<Rigidbody2D>();
@@ -19,13 +21,13 @@ public class PlayerScript : MonoBehaviour
     }
 
     void Update() {
+        gameTime += Time.deltaTime;
         Movement();
-        
     }
 
     private void Movement() {
         float moveY = Input.GetAxis("Vertical");
-
+        
         Vector2 playerPosition = transform.position;
         Vector2 closestPoint = getClosestPointOnPath(playerPosition);
         Vector2 closestStationaryPoint = getClosestStationaryPoint(playerPosition);
@@ -37,7 +39,9 @@ public class PlayerScript : MonoBehaviour
         // direction.Normalize();
         transform.position = Vector2.MoveTowards(this.transform.position, closestStationaryPoint, 1f * Time.deltaTime);
 
-        if (touchingEnemy || touchingWall) {
+        if (touchingEnemy) {
+            horizontalSpeed = 0.25f;
+        }else if(touchingWall){
             horizontalSpeed = 0.25f;
         } else {
             horizontalSpeed = boostMultiplier / (distanceToPath + 1);
@@ -48,7 +52,6 @@ public class PlayerScript : MonoBehaviour
     private Vector2 getClosestStationaryPoint(Vector2 playerPosition) {
         Vector2 closestPoint = stationaryPoints[0].position;
         float closestDistance = Vector2.Distance(playerPosition, closestPoint);
-
         for (int i = 1; i < stationaryPoints.Length; i++) {
             Vector2 point = stationaryPoints[i].position;
             float distance = Vector2.Distance(playerPosition, point);
@@ -93,6 +96,8 @@ public class PlayerScript : MonoBehaviour
     private void drawPath() {
         lineRenderer.positionCount = waypoints.Length;
         for (int i = 0; i < waypoints.Length; i++) {
+            float randomY = Random.Range(-4.7f, 4.7f);
+            waypoints[i].position = new Vector3(waypoints[i].position.x, randomY, waypoints[i].position.z);
             lineRenderer.SetPosition(i, waypoints[i].position);
         }
     }
@@ -104,12 +109,23 @@ public class PlayerScript : MonoBehaviour
             touchingWall = true;
         } else if(collision.gameObject.CompareTag("Finish")) {
             Debug.Log("You Win!");
-        }
+            int finalTime = (int)gameTime;
+            PlayerPrefs.SetInt("FinalTime", finalTime);
+            SceneManager.LoadScene("WinScene");
+        } 
     }
 
     private void OnCollisionExit2D(Collision2D collision) {
-        if (collision.gameObject.CompareTag("Enemy")) {
-            touchingEnemy = false;
+        touchingEnemy = false;
+        touchingWall = false;
+    }
+
+    private void OnTriggerEnter2D(Collider2D other) {
+        if (other.gameObject.CompareTag("Enemy")) {
+            touchingEnemy = true;
         }
+    }
+    private void OnTriggerExit2D(Collider2D other) {
+        touchingEnemy = false;
     }
 }
